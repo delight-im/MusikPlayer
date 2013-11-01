@@ -4,7 +4,7 @@ Simple Music Player for Windows/Linux/Mac
 
 ## Contributing
 
-Every contribution is highly appreciated. Please fork this repository, apply your changes, and submit your contributions by sending a pull request.
+We welcome any contribution, no matter how small or large. Please fork this repository, apply your changes, and submit your contributions by sending a pull request.
 
 ## License
 
