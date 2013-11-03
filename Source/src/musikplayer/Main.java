@@ -58,15 +58,17 @@ import javax.swing.SwingWorker;
 public class Main extends JFrame implements ActionListener, MouseListener {
 
 	public static final String NEWLINE = System.getProperty("line.separator");
-	public static final String APPLICATION_INFO = "MusikPlayer 0.1.2"+NEWLINE+"https://github.com/delight-im/MusikPlayer"+NEWLINE+"GNU General Public License v3"+NEWLINE+NEWLINE+"JLayer by JavaZOOM (LGPL)"+NEWLINE+"ionicons by Drifty (MIT License)";
+	public static final String APPLICATION_INFO = "MusikPlayer 0.1.3"+NEWLINE+"https://github.com/delight-im/MusikPlayer"+NEWLINE+"GNU General Public License v3"+NEWLINE+NEWLINE+"JLayer by JavaZOOM (LGPL)"+NEWLINE+"ionicons by Drifty (MIT License)";
 	public static final String DIRECTORY_MUSIC_COLLECTION = "";
 	public static final String ICON_PATH = "/images/png/";
-	private static final long serialVersionUID = 2L;
+	private static final long serialVersionUID = 3L;
 	private static final String TABLE_EVENT_KEY_ENTER = "keyEnter";
 	private static final String PREFS_KEY_FONTSIZE = "prefs_fontsize_index";
+	private static final String PREFS_LAST_DIRECTORY = "prefs_last_directory";
 	private static final String LIBRARY_FILE_NAME = "Library";
 	private static final String LIBRARY_FILE_EXTENSION = ".ini";
-	private static final int FONT_SIZE_INDEX_DEFAULT = 1;
+	private static final int DEFAULT_FONT_SIZE_INDEX = 1;
+	private static final String DEFAULT_LAST_DIRECTORY = System.getProperty("user.home");
 	private static PlayingThread p = null;
 	private static PlaylistTableModel mModel = null;
 	private static JTable table = null;
@@ -86,7 +88,7 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 	private static JMenuItem miExit;
 	// MENU-ITEMS ENDE
 	private static int[] mFontSizes = { 10, 12, 14, 16, 18, 20, 22, 24 };
-	private static int mFontSizeIndex = FONT_SIZE_INDEX_DEFAULT;
+	private static int mFontSizeIndex = DEFAULT_FONT_SIZE_INDEX;
 	private static int mCurrentZoomDirection = 1;
 	private static boolean isEditingMode = false;
 	private static Preferences mPrefs = Preferences.userNodeForPackage(musikplayer.Main.class);
@@ -196,7 +198,7 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 		table.addMouseListener(this);
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.getColumnModel().getColumn(0).setPreferredWidth(50);
-		setFontSize(mPrefs.getInt(PREFS_KEY_FONTSIZE, FONT_SIZE_INDEX_DEFAULT), true);
+		setFontSize(mPrefs.getInt(PREFS_KEY_FONTSIZE, DEFAULT_FONT_SIZE_INDEX), true);
 		KeyStroke keyEnter = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 		table.getInputMap(JTable.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(keyEnter, TABLE_EVENT_KEY_ENTER);
 		table.getActionMap().put(TABLE_EVENT_KEY_ENTER, new AbstractAction() {
@@ -415,49 +417,74 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 			}
 		}
 		else if (s == btnAdd) {
-			final JFileChooser fc = new JFileChooser(System.getProperty("user.home"));
-			for (int i = 0; i < 3; i++) { // go three steps up to <Computer> directory
-				fc.changeToParentDirectory();
-			}
+			final String initialDirectory = mPrefs.get(PREFS_LAST_DIRECTORY, DEFAULT_LAST_DIRECTORY);
+			final JFileChooser fc = new JFileChooser(initialDirectory);
+			fc.setMultiSelectionEnabled(true);
 			int fcReturn = fc.showOpenDialog(null);
 			if (fcReturn == JFileChooser.APPROVE_OPTION) {
-				File returnedFile = fc.getSelectedFile();
-				if (returnedFile.exists()) {
-					String fileName = returnedFile.getName();
-					if (fileName.endsWith(".mp3")) {
-						String fileType = fileName.substring(fileName.length()-4);
-						String[] originalFileNameParts = fileName.replace(".mp3", "").split(" - ", -1);
-						String fileMD5 = MD5.get(returnedFile);
-						if (!fileMD5.equals("")) {
-							try {
-								String newFileName = fileMD5+fileType;
-								String newInterpret = "";
-								String newSongtitel = "";
-								String newAlbum = "";
-								Files.copy(returnedFile.toPath(), Paths.get(DIRECTORY_MUSIC_COLLECTION+newFileName), StandardCopyOption.REPLACE_EXISTING);
-								if (originalFileNameParts.length == 4) {
-									newInterpret = originalFileNameParts[1].trim();
-									newSongtitel = originalFileNameParts[2].trim();
-									newAlbum = originalFileNameParts[3].trim();
-								}
-								mModel.addRow(newInterpret, newSongtitel, newFileName, "", newAlbum, "", "", "");
-								showMessage("Song hinzugefügt", "Der Song wurde erfolgreich hinzugefügt!", false);
+				String selectedDirectory = null;
+				File[] returnedFiles = fc.getSelectedFiles();
+				if (returnedFiles.length > 0) {
+					int filesAdded = 0;
+					StringBuilder errorLog = new StringBuilder();
+					for (File returnedFile : returnedFiles) {
+						if (returnedFile.exists()) {
+							if (selectedDirectory == null) {
+								selectedDirectory = returnedFile.getParent();
 							}
-							catch (IOException e) {
-								e.printStackTrace();
-								showMessage("Fehler", "Der Song konnte nicht hinzugefügt werden! (Fehler beim Kopieren)", true);
+							String fileName = returnedFile.getName();
+							if (fileName.endsWith(".mp3")) {
+								String fileType = fileName.substring(fileName.length()-4);
+								String[] originalFileNameParts = fileName.replace(".mp3", "").split(" - ", -1);
+								String fileMD5 = MD5.get(returnedFile);
+								if (!fileMD5.equals("")) {
+									try {
+										String newFileName = fileMD5+fileType;
+										String newInterpret = "";
+										String newSongtitel = "";
+										String newAlbum = "";
+										Files.copy(returnedFile.toPath(), Paths.get(DIRECTORY_MUSIC_COLLECTION+newFileName), StandardCopyOption.REPLACE_EXISTING);
+										if (originalFileNameParts.length == 4) {
+											newInterpret = originalFileNameParts[1].trim();
+											newSongtitel = originalFileNameParts[2].trim();
+											newAlbum = originalFileNameParts[3].trim();
+										}
+										mModel.addRow(newInterpret, newSongtitel, newFileName, "", newAlbum, "", "", "");
+										filesAdded++;
+									}
+									catch (IOException e) {
+										e.printStackTrace();
+										errorLog.append(NEWLINE);
+										errorLog.append("Fehler beim Kopieren: "+returnedFile.getName());
+									}
+								}
+								else {
+									errorLog.append(NEWLINE);
+									errorLog.append("Fehler beim Zugriff: "+returnedFile.getName());
+								}
+							}
+							else {
+								errorLog.append(NEWLINE);
+								errorLog.append("Nicht im MP3-Format: "+returnedFile.getName());
 							}
 						}
 						else {
-							showMessage("Fehler", "Der Song konnte nicht hinzugefügt werden! (Fehler beim Zugriff)", true);
+							errorLog.append(NEWLINE);
+							errorLog.append("Datei nicht gefunden: "+returnedFile.getName());
 						}
 					}
+					if (errorLog.length() > 0) {
+						showMessage("Songs hinzugefügt", "Es wurden "+filesAdded+" Songs hinzugefügt!"+errorLog.toString(), true);
+					}
 					else {
-						showMessage("Fehler", "Der Song konnte nicht hinzugefügt werden! (keine MP3-Datei)", true);
+						showMessage("Songs hinzugefügt", "Es wurden "+filesAdded+" Songs hinzugefügt!", false);
 					}
 				}
 				else {
-					showMessage("Fehler", "Der Song konnte nicht hinzugefügt werden! (Datei existiert nicht)", true);
+					showMessage("Fehler", "Es wurden keine Songs zum Hinzufügen ausgewählt!", true);
+				}
+				if (selectedDirectory != null) {
+					mPrefs.put(PREFS_LAST_DIRECTORY, selectedDirectory);
 				}
 			}
 		}
@@ -490,7 +517,7 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 			mCurrentZoomDirection *= -1;
 		}
 		if (isInitial) {
-			if (index >= FONT_SIZE_INDEX_DEFAULT) {
+			if (index >= DEFAULT_FONT_SIZE_INDEX) {
 				mCurrentZoomDirection = 1;
 			}
 			else {
@@ -499,7 +526,7 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 		}
 		mFontSizeIndex = index;
 		table.setFont(new Font(table.getFont().getFontName(), Font.PLAIN, mFontSizes[mFontSizeIndex]));
-		table.setRowHeight(14+(mFontSizeIndex-FONT_SIZE_INDEX_DEFAULT)*2);			
+		table.setRowHeight(14+(mFontSizeIndex-DEFAULT_FONT_SIZE_INDEX)*2);			
 	}
 
 	@Override

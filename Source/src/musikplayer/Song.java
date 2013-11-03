@@ -19,7 +19,8 @@ package musikplayer;
 
 public class Song {
 	
-    private String mInterpret = "";
+    private static final String[] BEWERTUNG_VALID_VALUES = new String[] { "0", "1", "2", "3", "4", "5", "6" };
+	private String mInterpret = "";
     private String mSongtitel = "";
     private String mFileName = "";
     private String mGenre = "";
@@ -27,10 +28,10 @@ public class Song {
     private String mTanz = "";
     private int mJahr = 0;
     private int mDauerInSekunden = 0;
-    private int mBewertung = 0;
+    private String mBewertung = "0";
     private boolean mSelected = true;
     
-    public Song(String interpret, String songtitel, String fileName, String genre, String album, String tanz, int jahr, int dauerInSekunden, int bewertung) {
+    public Song(String interpret, String songtitel, String fileName, String genre, String album, String tanz, int jahr, int dauerInSekunden, String bewertung) {
     	mInterpret = interpret.trim().replace("/", "");
     	mSongtitel = songtitel.trim().replace("/", "");
     	mFileName = fileName.trim().replace("/", "");
@@ -43,9 +44,18 @@ public class Song {
     	if (dauerInSekunden > 0 && dauerInSekunden < 86400) {
     		mDauerInSekunden = dauerInSekunden;
     	}
-    	if (bewertung >= 1 && bewertung <= 6) {
+    	if (isBewertungValid(bewertung)) {
     		mBewertung = bewertung;
     	}
+    }
+    
+    public static boolean isBewertungValid(final String bewertung) {
+    	for (int i = 0; i < BEWERTUNG_VALID_VALUES.length; i++) {
+    		if (BEWERTUNG_VALID_VALUES[i].equals(bewertung)) {
+    			return true;
+    		}
+    	}
+    	return false;
     }
     
     public String getDataCSV() {
@@ -112,16 +122,16 @@ public class Song {
     
     public void setDauerInSekunden(int dauerInSekunden) {
     	if (dauerInSekunden > 0 && dauerInSekunden < 86400) {
-    		mJahr = dauerInSekunden;
+    		mDauerInSekunden = dauerInSekunden;
     	}
     }
     
-    public int getBewertung() {
+    public String getBewertung() {
     	return mBewertung;
     }
     
-    public void setBewertung(int bewertung) {
-    	if (bewertung >= 1 && bewertung <= 6) {
+    public void setBewertung(String bewertung) {
+    	if (isBewertungValid(bewertung)) {
     		mBewertung = bewertung;
     	}
     }

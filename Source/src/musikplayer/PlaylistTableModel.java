@@ -45,7 +45,8 @@ public class PlaylistTableModel implements TableModel {
 	
 	public String getDataCSV() {
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < songs.size(); i++) {
+		final int count = songs.size();
+		for (int i = 0; i < count; i++) {
 			if (i > 0) {
 				sb.append(NEWLINE);
 			}
@@ -74,7 +75,7 @@ public class PlaylistTableModel implements TableModel {
 			case 7:
 				return String.class;
 			case 8:
-				return Integer.class;
+				return String.class;
 		}
 		return null;
 	}
@@ -164,16 +165,16 @@ public class PlaylistTableModel implements TableModel {
 			songToEdit.setAlbum((String) value);
 		}
 		else if (columnIndex == 5) {
-			songToEdit.setJahr((int) value);
+			songToEdit.setJahr((Integer) value);
 		}
 		else if (columnIndex == 6) {
-			songToEdit.setDauerInSekunden((int) value);
+			songToEdit.setDauerInSekunden((Integer) value);
 		}
 		else if (columnIndex == 7) {
 			songToEdit.setTanz((String) value);
 		}
 		else if (columnIndex == 8) {
-			songToEdit.setBewertung((int) value);
+			songToEdit.setBewertung((String) value);
 		}
 		TableModelEvent tEvent = new TableModelEvent(this, rowIndex, rowIndex, columnIndex, TableModelEvent.UPDATE);
 		for (TableModelListener l: listeners) {
@@ -182,16 +183,17 @@ public class PlaylistTableModel implements TableModel {
 	}
 
 	public void addRow(String interpret, String songtitel, String fileName, String genre, String album, String bewertung, String jahr, String tanz) {
-		int intJahr = 0;
-		int intBewertung = 0;
+		int intJahr;
 		try {
 			intJahr = Integer.parseInt(jahr);
-			intBewertung = Integer.parseInt(bewertung);
 		}
-		catch (Exception e) { }
-		Song songToAdd = new Song(interpret, songtitel, fileName, genre, album, tanz, intJahr, 0, intBewertung);
+		catch (Exception e) {
+			intJahr = 0;
+		}
+		Song songToAdd = new Song(interpret, songtitel, fileName, genre, album, tanz, intJahr, 0, bewertung);
 		songs.add(songToAdd);
-		TableModelEvent event = new TableModelEvent(this, songs.size()-1, songs.size()-1, TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT);
+		final int rowID = songs.size()-1;
+		TableModelEvent event = new TableModelEvent(this, rowID, rowID, TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT);
 		for (TableModelListener l: listeners) {
 			l.tableChanged(event);
 		}
@@ -205,11 +207,13 @@ public class PlaylistTableModel implements TableModel {
 		}
 	}
 	
-	public class TanzCellEditor extends AbstractCellEditor implements TableCellEditor {
-		private static final long serialVersionUID = 1L;
+	private static abstract class AbstractSelectCellEditor extends AbstractCellEditor implements TableCellEditor {
 
-		String[] selectOptions = { "", "Cha-Cha-Cha", "Blues", "Bolero", "Boogie-Woogie", "Bossa Nova", "Calypso", "Discofox", "Flamenco", "Foxtrott", "Jive", "Langsamer Walzer", "Merengue", "Paso Doble", "Polka", "Quickstep", "Rock'n'Roll", "Rumba", "Salsa", "Samba", "Tango", "Two-Step", "Wiener Walzer" };
-	    JComponent component = new JComboBox<String>(selectOptions);
+		private static final long serialVersionUID = 1L;
+		protected String[] selectOptions = getSelectOptions();
+		protected JComponent component = new JComboBox<String>(selectOptions);
+	    
+	    public abstract String[] getSelectOptions();
 
 	    @SuppressWarnings("unchecked")
 	    public Object getCellEditorValue() {
@@ -222,43 +226,30 @@ public class PlaylistTableModel implements TableModel {
 			((JComboBox<String>) component).setSelectedItem(((String) value));
 			return component;
 		}
+
 	}
 	
-	public class GenreCellEditor extends AbstractCellEditor implements TableCellEditor {
-		private static final long serialVersionUID = 1L;
-
-		String[] selectOptions = { "", "Karneval", "Musical", "Oldies", "R&B", "Reggae", "Rock & Pop", "Soul" };
-	    JComponent component = new JComboBox<String>(selectOptions);
-
-	    @SuppressWarnings("unchecked")
-		public Object getCellEditorValue() {
-	        return ((JComboBox<String>) component).getSelectedItem(); // returns new value (result of editing)
-	    }
-
-	    @SuppressWarnings("unchecked")
-	    @Override
-		public Component getTableCellEditorComponent(JTable table, Object value, boolean is_selected, int row, int column) {
-			((JComboBox<String>) component).setSelectedItem(((String) value));
-			return component;
+	public class TanzCellEditor extends AbstractSelectCellEditor {
+		private static final long serialVersionUID = 2L;
+		@Override
+		public String[] getSelectOptions() {
+			return new String[] { "", "Cha-Cha-Cha", "Blues", "Bolero", "Boogie-Woogie", "Bossa Nova", "Calypso", "Discofox", "Flamenco", "Foxtrott", "Jive", "Langsamer Walzer", "Merengue", "Paso Doble", "Polka", "Quickstep", "Rock'n'Roll", "Rumba", "Salsa", "Samba", "Tango", "Two-Step", "Wiener Walzer" };
 		}
 	}
 	
-	public class BewertungCellEditor extends AbstractCellEditor implements TableCellEditor {
-		private static final long serialVersionUID = 1L;
-
-		String[] selectOptions = { "0", "1", "2", "3", "4", "5", "6" };
-	    JComponent component = new JComboBox<String>(selectOptions);
-
-	    @SuppressWarnings("unchecked")
-	    public Object getCellEditorValue() {
-	        return ((JComboBox<String>) component).getSelectedItem(); // returns new value (result of editing)
-	    }
-
-	    @SuppressWarnings("unchecked")
-	    @Override
-		public Component getTableCellEditorComponent(JTable table, Object value, boolean is_selected, int row, int column) {
-			((JComboBox<String>) component).setSelectedItem(((int) value));
-			return component;
+	public class GenreCellEditor extends AbstractSelectCellEditor {
+		private static final long serialVersionUID = 2L;
+		@Override
+		public String[] getSelectOptions() {
+			return new String[] { "", "Karneval", "Musical", "Oldies", "R&B", "Reggae", "Rock & Pop", "Soul" };
+		}
+	}
+	
+	public class BewertungCellEditor extends AbstractSelectCellEditor {
+		private static final long serialVersionUID = 2L;
+		@Override
+		public String[] getSelectOptions() {
+			return new String[] { "0", "1", "2", "3", "4", "5", "6" };
 		}
 	}
 
