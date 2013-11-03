@@ -27,11 +27,11 @@ public class Song {
     private String mAlbum = "";
     private String mTanz = "";
     private int mJahr = 0;
-    private int mDauerInSekunden = 0;
+    private long mDauerInSekunden = 0;
     private String mBewertung = "0";
     private boolean mSelected = true;
     
-    public Song(String interpret, String songtitel, String fileName, String genre, String album, String tanz, int jahr, int dauerInSekunden, String bewertung) {
+    public Song(String interpret, String songtitel, String fileName, String genre, String album, String tanz, int jahr, long dauerInSekunden, String bewertung) {
     	mInterpret = interpret.trim().replace("/", "");
     	mSongtitel = songtitel.trim().replace("/", "");
     	mFileName = fileName.trim().replace("/", "");
@@ -41,7 +41,7 @@ public class Song {
     	if (jahr >= 0 && jahr < 3000) {
     		mJahr = jahr;
     	}
-    	if (dauerInSekunden > 0 && dauerInSekunden < 86400) {
+    	if (dauerInSekunden >= 0 && dauerInSekunden < 86400) {
     		mDauerInSekunden = dauerInSekunden;
     	}
     	if (isBewertungValid(bewertung)) {
@@ -59,7 +59,7 @@ public class Song {
     }
     
     public String getDataCSV() {
-    	return mInterpret+"/"+mSongtitel+"/"+mFileName+"/"+"0"+"/"+mGenre+"/"+mAlbum+"/"+String.valueOf(mBewertung)+"/"+String.valueOf(mJahr)+"/"+mTanz;
+    	return mInterpret+"/"+mSongtitel+"/"+mFileName+"/"+String.valueOf(mDauerInSekunden)+"/"+mGenre+"/"+mAlbum+"/"+String.valueOf(mBewertung)+"/"+String.valueOf(mJahr)+"/"+mTanz;
     }
     
     public String getInterpret() {
@@ -111,17 +111,17 @@ public class Song {
     }
     
     public void setJahr(int jahr) {
-    	if (jahr > 0 && jahr < 3000) {
+    	if (jahr >= 0 && jahr < 3000) {
     		mJahr = jahr;
     	}
     }
     
-    public int getDauerInSekunden() {
+    public long getDauerInSekunden() {
     	return mDauerInSekunden;
     }
     
-    public void setDauerInSekunden(int dauerInSekunden) {
-    	if (dauerInSekunden > 0 && dauerInSekunden < 86400) {
+    public void setDauerInSekunden(long dauerInSekunden) {
+    	if (dauerInSekunden >= 0 && dauerInSekunden < 86400) {
     		mDauerInSekunden = dauerInSekunden;
     	}
     }

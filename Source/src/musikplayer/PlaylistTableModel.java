@@ -71,7 +71,7 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 			case 5:
 				return Integer.class;
 			case 6:
-				return Integer.class;
+				return Long.class;
 			case 7:
 				return String.class;
 			case 8:
@@ -169,10 +169,10 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 			songToEdit.setAlbum((String) value);
 		}
 		else if (columnIndex == 5) {
-			songToEdit.setJahr((Integer) value);
+			songToEdit.setJahr(value == null ? 0 : ((Integer) value));
 		}
 		else if (columnIndex == 6) {
-			songToEdit.setDauerInSekunden((Integer) value);
+			songToEdit.setDauerInSekunden(value == null ? 0 : ((Long) value));
 		}
 		else if (columnIndex == 7) {
 			songToEdit.setTanz((String) value);
@@ -186,7 +186,7 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 		}
 	}
 
-	public void addRow(String interpret, String songtitel, String fileName, String genre, String album, String bewertung, String jahr, String tanz) {
+	public void addRow(String interpret, String songtitel, String fileName, String genre, String album, String bewertung, String jahr, String tanz, String duration) {
 		int intJahr;
 		try {
 			intJahr = Integer.parseInt(jahr);
@@ -194,7 +194,16 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 		catch (Exception e) {
 			intJahr = 0;
 		}
-		Song songToAdd = new Song(interpret, songtitel, fileName, genre, album, tanz, intJahr, 0, bewertung);
+		
+		long longDuration;
+		try {
+			longDuration = Long.parseLong(duration);
+		}
+		catch (Exception e) {
+			longDuration = 0;
+		}
+
+		Song songToAdd = new Song(interpret, songtitel, fileName, genre, album, tanz, intJahr, longDuration, bewertung);
 		songs.add(songToAdd);
 		final int rowID = songs.size()-1;
 		TableModelEvent event = new TableModelEvent(this, rowID, rowID, TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT);
@@ -278,11 +287,18 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 				setValueAt(songs.get(i).getFileName(), i, -1);
 			}
 			
-			// fire update events
-			TableModelEvent event = new TableModelEvent(this, 0, getRowCount()-1, TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE);
-			for (TableModelListener l: listeners) {
-				l.tableChanged(event);
-			}
+			updateRow(0, getRowCount()-1);
+		}
+	}
+	
+	public void updateRow(int rowStart) {
+		updateRow(rowStart, rowStart);
+	}
+		
+	public void updateRow(int rowStart, int rowEnd) {
+		TableModelEvent event = new TableModelEvent(this, rowStart, rowEnd, TableModelEvent.ALL_COLUMNS, TableModelEvent.UPDATE);
+		for (TableModelListener l: listeners) {
+			l.tableChanged(event);
 		}
 	}
 

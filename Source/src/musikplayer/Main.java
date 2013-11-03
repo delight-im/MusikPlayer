@@ -58,11 +58,12 @@ import javax.swing.SwingWorker;
 
 public class Main extends JFrame implements ActionListener, MouseListener {
 
+	private static final long serialVersionUID = 4L;
 	public static final String NEWLINE = System.getProperty("line.separator");
-	public static final String APPLICATION_INFO = "MusikPlayer 0.1.3"+NEWLINE+"https://github.com/delight-im/MusikPlayer"+NEWLINE+"GNU General Public License v3"+NEWLINE+NEWLINE+"JLayer by JavaZOOM (LGPL)"+NEWLINE+"ionicons by Drifty (MIT License)";
+	public static final String VERSION_STRING = "0.1.4";
+	public static final String APPLICATION_INFO = "MusikPlayer "+VERSION_STRING+NEWLINE+"GNU General Public License v3"+NEWLINE+"<github.com/delight-im/MusikPlayer>"+NEWLINE+NEWLINE+"JLayer by JavaZOOM (LGPL)"+NEWLINE+"mp3agic by Michael Patricios (MIT License)"+NEWLINE+"ionicons by Drifty (MIT License)";
 	public static final String DIRECTORY_MUSIC_COLLECTION = "";
 	public static final String ICON_PATH = "/images/png/";
-	private static final long serialVersionUID = 3L;
 	private static final String TABLE_EVENT_KEY_ENTER = "keyEnter";
 	private static final String PREFS_KEY_FONTSIZE = "prefs_fontsize_index";
 	private static final String PREFS_LAST_DIRECTORY = "prefs_last_directory";
@@ -240,10 +241,10 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 				while ((s = libraryReader.readLine()) != null) {
 					l = s.split("/", -1); // flag -1 wichtig sonst werden leere Strings weggelassen
 					if (l.length >= 9) {
-						mModel.addRow(l[0], l[1], l[2], l[4], l[5], l[6], l[7], l[8]);
+						mModel.addRow(l[0], l[1], l[2], l[4], l[5], l[6], l[7], l[8], l[3]);
 					}
 					else if (l.length >= 8) {
-						mModel.addRow(l[0], l[1], l[2], l[4], l[5], l[6], l[7], "");
+						mModel.addRow(l[0], l[1], l[2], l[4], l[5], l[6], l[7], "", l[3]);
 					}
 				}
 			}
@@ -387,9 +388,34 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 	}
 
 	private void playCurrentSelection() {
-		if (table.getSelectedRow() != -1) {
-			String file = (String) table.getValueAt(table.getSelectedRow(), -1);
+		final int row = table.getSelectedRow();
+		if (row != -1) {
+			String file = (String) table.getValueAt(row, -1);
 			playFile(file);
+			
+			try {
+				final SongInfo songInfo = SongInfo.fromFile(file);
+				final Song song = ((PlaylistTableModel) table.getModel()).getValueAt(row);
+				if (song.getInterpret().length() == 0) {
+					song.setInterpret(songInfo.getArtist());
+				}
+				if (song.getSongtitel().length() == 0) {
+					song.setSongtitel(songInfo.getTitle());
+				}
+				if (song.getAlbum().length() == 0) {
+					song.setAlbum(songInfo.getAlbum());
+				}
+				if (song.getJahr() == 0) {
+					song.setJahr(songInfo.getYear());
+				}
+				if (song.getDauerInSekunden() == 0) {
+					song.setDauerInSekunden(songInfo.getDuration());
+				}
+				((PlaylistTableModel) table.getModel()).updateRow(row);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		else {
 			showMessage("Fehler", "Bitte einen Song auswählen, der abgespielt werden soll!", true);
@@ -450,13 +476,27 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 										String newInterpret = "";
 										String newSongtitel = "";
 										String newAlbum = "";
+										int newYear = 0;
+										long newDuration = 0;
 										Files.copy(returnedFile.toPath(), Paths.get(DIRECTORY_MUSIC_COLLECTION+newFileName), StandardCopyOption.REPLACE_EXISTING);
+
+										// TRY TO GET SONG INFORMATION BEGIN
+										final SongInfo songData = SongInfo.fromFile(returnedFile.getCanonicalPath());
 										if (originalFileNameParts.length == 4) {
 											newInterpret = originalFileNameParts[1].trim();
 											newSongtitel = originalFileNameParts[2].trim();
 											newAlbum = originalFileNameParts[3].trim();
 										}
-										mModel.addRow(newInterpret, newSongtitel, newFileName, "", newAlbum, "", "", "");
+										else {
+											newInterpret = songData.getArtist();
+											newSongtitel = songData.getTitle();
+											newAlbum = songData.getAlbum();
+										}
+										newYear = songData.getYear();
+										newDuration = songData.getDuration();
+										// TRY TO GET SONG INFORMATION END
+
+										mModel.addRow(newInterpret, newSongtitel, newFileName, "", newAlbum, "", String.valueOf(newYear), "", String.valueOf(newDuration));
 										filesAdded++;
 									}
 									catch (IOException e) {
@@ -497,7 +537,7 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 		}
 		else if (s == miAbout) {
 			String aboutText = APPLICATION_INFO+NEWLINE+NEWLINE+table.getRowCount()+" Songs";
-			showMessage("Über", aboutText, false);
+			showMessage("Über MusikPlayer", aboutText, false);
 		}
 		else if (s == miExit) {
 			exitApplication();
