@@ -38,7 +38,7 @@ public class Song {
     	mGenre = genre.trim().replace("/", "");
     	mAlbum = album.trim().replace("/", "");
     	mTanz = tanz.trim().replace("/", "");
-    	if (jahr > 0 && jahr < 3000) {
+    	if (jahr >= 0 && jahr < 3000) {
     		mJahr = jahr;
     	}
     	if (dauerInSekunden > 0 && dauerInSekunden < 86400) {

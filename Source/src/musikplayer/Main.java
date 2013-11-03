@@ -40,6 +40,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.prefs.Preferences;
 import javax.swing.AbstractAction;
+import javax.swing.DropMode;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
@@ -198,6 +199,11 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 		table.addMouseListener(this);
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.getColumnModel().getColumn(0).setPreferredWidth(50);
+		// DRAG AND DROP OF ROWS FOR REORDERING BEGIN
+		table.setDragEnabled(true);
+		table.setDropMode(DropMode.INSERT_ROWS);
+		table.setTransferHandler(new TableRowTransferHandler(table)); 
+		// DRAG AND DROP OF ROWS FOR REORDERING END
 		setFontSize(mPrefs.getInt(PREFS_KEY_FONTSIZE, DEFAULT_FONT_SIZE_INDEX), true);
 		KeyStroke keyEnter = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
 		table.getInputMap(JTable.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(keyEnter, TABLE_EVENT_KEY_ENTER);
@@ -209,6 +215,7 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 				playCurrentSelection();
 			}
 		});
+
 		// READ LIBRARY FILE ANFANG
 		fLibrary = new File(DIRECTORY_MUSIC_COLLECTION+LIBRARY_FILE_NAME+LIBRARY_FILE_EXTENSION);
 		if (fLibrary.exists()) {
