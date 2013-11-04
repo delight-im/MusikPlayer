@@ -31,7 +31,7 @@ import javax.swing.table.TableModel;
 public class PlaylistTableModel implements TableModel, Reorderable {
 
 	private ArrayList<TableModelListener> listeners = new ArrayList<TableModelListener>();
-	private ArrayList<Song> songs = new ArrayList<Song>();
+	private ArrayList<Song> mSongs = new ArrayList<Song>();
 	private String[] columnNames = new String[] { "", "Interpret", "Songtitel", "Kategorie", "Album", "Jahr", "Dauer", "Tanz", "Bewertung" };
 	public static final String NEWLINE = System.getProperty("line.separator");
 
@@ -45,12 +45,12 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 	
 	public String getDataCSV() {
 		StringBuilder sb = new StringBuilder();
-		final int count = songs.size();
+		final int count = mSongs.size();
 		for (int i = 0; i < count; i++) {
 			if (i > 0) {
 				sb.append(NEWLINE);
 			}
-			sb.append(songs.get(i).getDataCSV());
+			sb.append(mSongs.get(i).getDataCSV());
 		}
 		return sb.toString();
 	}
@@ -92,16 +92,16 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 
 	@Override
 	public int getRowCount() {
-		return songs.size();
+		return mSongs.size();
 	}
 	
 	public Song getValueAt(int rowIndex) {
-		return songs.get(rowIndex);
+		return mSongs.get(rowIndex);
 	}
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		Song songToReturn = songs.get(rowIndex);
+		Song songToReturn = mSongs.get(rowIndex);
 		if (columnIndex == -1) {
 			return songToReturn.getFileName();
 		}
@@ -152,7 +152,7 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 
 	@Override
 	public void setValueAt(Object value, int rowIndex, int columnIndex) {
-		Song songToEdit = songs.get(rowIndex);
+		Song songToEdit = mSongs.get(rowIndex);
 		if (columnIndex == 0) {
 			songToEdit.setSelected((boolean) value);
 		}
@@ -204,8 +204,8 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 		}
 
 		Song songToAdd = new Song(interpret, songtitel, fileName, genre, album, tanz, intJahr, longDuration, bewertung);
-		songs.add(songToAdd);
-		final int rowID = songs.size()-1;
+		mSongs.add(songToAdd);
+		final int rowID = mSongs.size()-1;
 		TableModelEvent event = new TableModelEvent(this, rowID, rowID, TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT);
 		for (TableModelListener l: listeners) {
 			l.tableChanged(event);
@@ -213,7 +213,7 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 	}
 
 	public void removeRow(int selectedRow) {
-		songs.remove(selectedRow);
+		mSongs.remove(selectedRow);
 		TableModelEvent event = new TableModelEvent(this, selectedRow, selectedRow, TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE);
 		for (TableModelListener l: listeners) {
 			l.tableChanged(event);
@@ -242,7 +242,7 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 
 	}
 	
-	public class TanzCellEditor extends AbstractSelectCellEditor {
+	public static class TanzCellEditor extends AbstractSelectCellEditor {
 		private static final long serialVersionUID = 2L;
 		@Override
 		public String[] getSelectOptions() {
@@ -250,7 +250,7 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 		}
 	}
 	
-	public class GenreCellEditor extends AbstractSelectCellEditor {
+	public static class GenreCellEditor extends AbstractSelectCellEditor {
 		private static final long serialVersionUID = 2L;
 		@Override
 		public String[] getSelectOptions() {
@@ -258,11 +258,11 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 		}
 	}
 	
-	public class BewertungCellEditor extends AbstractSelectCellEditor {
+	public static class BewertungCellEditor extends AbstractSelectCellEditor {
 		private static final long serialVersionUID = 2L;
 		@Override
 		public String[] getSelectOptions() {
-			return new String[] { "0", "1", "2", "3", "4", "5", "6" };
+			return Song.BEWERTUNG_VALID_VALUES;
 		}
 	}
 
@@ -270,21 +270,21 @@ public class PlaylistTableModel implements TableModel, Reorderable {
 	public void reorder(int fromIndex, int toIndex) {
 		if (fromIndex != toIndex) {
 			// get the song object before we remove it
-			final Song songToMove = songs.get(fromIndex);
+			final Song songToMove = mSongs.get(fromIndex);
 			
 			// remove the song element from the data source
 			if (fromIndex < toIndex) {
 				toIndex--;
 			}
-			songs.remove(fromIndex);
+			mSongs.remove(fromIndex);
 			
 			// add the song element to the data source again (at the new position)
-			songs.add(toIndex, songToMove);
+			mSongs.add(toIndex, songToMove);
 			
 			// update the filenames which are located in column <-1>
 			final int rowCount = getRowCount();
 			for (int i = 0; i < rowCount; i++) {
-				setValueAt(songs.get(i).getFileName(), i, -1);
+				setValueAt(mSongs.get(i).getFileName(), i, -1);
 			}
 			
 			updateRow(0, getRowCount()-1);

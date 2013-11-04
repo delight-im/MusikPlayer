@@ -58,9 +58,9 @@ import javax.swing.SwingWorker;
 
 public class Main extends JFrame implements ActionListener, MouseListener {
 
-	private static final long serialVersionUID = 4L;
+	private static final long serialVersionUID = 5L;
 	public static final String NEWLINE = System.getProperty("line.separator");
-	public static final String VERSION_STRING = "0.1.4";
+	public static final String VERSION_STRING = "0.1.5";
 	public static final String APPLICATION_INFO = "MusikPlayer "+VERSION_STRING+NEWLINE+"GNU General Public License v3"+NEWLINE+"<github.com/delight-im/MusikPlayer>"+NEWLINE+NEWLINE+"JLayer by JavaZOOM (LGPL)"+NEWLINE+"mp3agic by Michael Patricios (MIT License)"+NEWLINE+"ionicons by Drifty (MIT License)";
 	public static final String DIRECTORY_MUSIC_COLLECTION = "";
 	public static final String ICON_PATH = "/images/png/";
@@ -92,7 +92,7 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 	private static int[] mFontSizes = { 10, 12, 14, 16, 18, 20, 22, 24 };
 	private static int mFontSizeIndex = DEFAULT_FONT_SIZE_INDEX;
 	private static int mCurrentZoomDirection = 1;
-	private static boolean isEditingMode = false;
+	private static boolean mIsEditingMode = false;
 	private static Preferences mPrefs = Preferences.userNodeForPackage(musikplayer.Main.class);
 
 	public static void main(String[] args) {
@@ -194,9 +194,9 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 		table = new JTable(mModel);
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 		table.setAutoCreateRowSorter(true);
-		table.getColumnModel().getColumn(3).setCellEditor(mModel.new GenreCellEditor());
-		table.getColumnModel().getColumn(7).setCellEditor(mModel.new TanzCellEditor());
-		table.getColumnModel().getColumn(8).setCellEditor(mModel.new BewertungCellEditor());
+		table.getColumnModel().getColumn(3).setCellEditor(new PlaylistTableModel.GenreCellEditor());
+		table.getColumnModel().getColumn(7).setCellEditor(new PlaylistTableModel.TanzCellEditor());
+		table.getColumnModel().getColumn(8).setCellEditor(new PlaylistTableModel.BewertungCellEditor());
 		table.addMouseListener(this);
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.getColumnModel().getColumn(0).setPreferredWidth(50);
@@ -384,7 +384,7 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 	}
 
 	public static boolean isEditingMode() {
-		return isEditingMode;
+		return mIsEditingMode;
 	}
 
 	private void playCurrentSelection() {
@@ -440,12 +440,12 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 			stopPlayingThread();
 		}
 		else if (s == btnEditingMode) {
-			if (isEditingMode) {
-				isEditingMode = false;
+			if (mIsEditingMode) {
+				mIsEditingMode = false;
 				btnEditingMode.setIcon(icEditingFalse);
 			}
 			else {
-				isEditingMode = true;
+				mIsEditingMode = true;
 				btnEditingMode.setIcon(icEditingTrue);
 			}
 		}
@@ -543,9 +543,18 @@ public class Main extends JFrame implements ActionListener, MouseListener {
 			exitApplication();
 		}
 		else if (s == btnDelete) {
-			if (table.getSelectedRow() != -1) {
-				if (confirmYesNo("Song löschen", "Soll der ausgewählte Song wirklich gelöscht werden?") == JOptionPane.YES_OPTION) {
-					mModel.removeRow(table.getSelectedRow());
+			final int selectedRow = table.getSelectedRow();
+			if (selectedRow > -1) {
+				try {
+					final int selectedModelRow = table.convertRowIndexToModel(selectedRow);
+					final Song selectedSong = mModel.getValueAt(selectedModelRow);
+					final String deleteWarning = "Soll der ausgewählte Song wirklich gelöscht werden?\n"+selectedSong.getInterpret()+" - "+selectedSong.getSongtitel();
+					if (confirmYesNo("Song löschen", deleteWarning) == JOptionPane.YES_OPTION) {
+						mModel.removeRow(selectedModelRow);
+					}
+				}
+				catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 		}
